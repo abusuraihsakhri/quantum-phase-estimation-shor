@@ -199,17 +199,32 @@ def reverse_qubits(state: List[complex], n: int) -> List[complex]:
 
 # ─── Quantum Phase Estimation ───────────────────────────────────────────────
 
+def _validate_qpe_inputs(phi: float, n_ancilla: int) -> None:
+    """Validate QPE parameters, raising ValueError on invalid input."""
+    if not isinstance(n_ancilla, int):
+        raise TypeError(f"n_ancilla must be an integer, got {type(n_ancilla).__name__}")
+    if n_ancilla < 1:
+        raise ValueError(f"n_ancilla must be >= 1, got {n_ancilla}")
+    if n_ancilla > 20:
+        raise ValueError(f"n_ancilla must be <= 20 (state vector limit), got {n_ancilla}")
+    if not isinstance(phi, (int, float)):
+        raise TypeError(f"phase must be a number, got {type(phi).__name__}")
+    if not math.isfinite(phi):
+        raise ValueError(f"phase must be finite, got {phi}")
+
+
 def quantum_phase_estimation(phi: float, n_ancilla: int) -> dict:
     """
     Full QPE algorithm for a phase gate U = [[1,0],[0,e^(2πiφ)]].
-    
+
     Uses a simplified but correct approach:
     1. Build the ancilla state after controlled-U operations
     2. Apply inverse QFT to ancilla register
     3. Extract measurement probabilities
-    
+
     Returns dict with estimated phase, probabilities, and diagnostics.
     """
+    _validate_qpe_inputs(phi, n_ancilla)
     N = 2 ** n_ancilla
     
     # Step 1: After Hadamard on ancilla and controlled-U^(2^k) operations,
@@ -399,10 +414,21 @@ def continued_fraction_phase(phi: float, max_denom: int) -> Tuple[int, int]:
 def shor_order_finding(a: int, N: int, n_ancilla: int = 8) -> dict:
     """
     Simplified Shor's order finding using QPE.
-    
+
     Finds r such that a^r ≡ 1 (mod N).
     Uses QPE on the modular exponentiation unitary.
     """
+    # Validate inputs
+    if not isinstance(a, int) or not isinstance(N, int):
+        raise TypeError("a and N must be integers")
+    if N <= 1:
+        raise ValueError(f"N must be > 1, got {N}")
+    if a < 1:
+        raise ValueError(f"a must be >= 1, got {a}")
+    if a >= N:
+        raise ValueError(f"a must be < N, got a={a}, N={N}")
+    _validate_qpe_inputs(0.5, n_ancilla)  # validates n_ancilla
+
     # Step 1: Classical GCD check
     g = math.gcd(a, N)
     if g > 1:
