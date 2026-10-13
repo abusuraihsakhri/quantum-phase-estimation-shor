@@ -1,236 +1,97 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantum Phase Estimation Shor — Operations Console</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #090d16;
-            --card: #111827;
-            --border: #1f293d;
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.25);
-            --text: #f3f4f6;
-            --text-muted: #9ca3af;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --success: #10b981;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            padding: 2rem;
-            min-height: 100vh;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .header-title h1 { font-size: 1.6rem; font-weight: 700; color: #fff; }
-        .header-title p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
-        .badge {
-            display: inline-block;
-            padding: 0.3rem 0.8rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: var(--accent-glow);
-            color: var(--accent);
-            border: 1px solid var(--accent);
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 1.5rem;
-        }
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        .card h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-        input, select, textarea {
-            width: 100%;
-            padding: 0.65rem 0.9rem;
-            background: #0d1322;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: #fff;
-            font-family: inherit;
-            font-size: 0.9rem;
-        }
-        input:focus, textarea:focus { outline: none; border-color: var(--accent); }
-        .btn {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 0.7rem 1.4rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            width: 100%;
-        }
-        .btn:hover { background: #2563eb; }
-        .terminal {
-            background: #060911;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: #10b981;
-            height: 380px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-        .metrics-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .metric-box {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            text-align: center;
-        }
-        .metric-val { font-size: 1.4rem; font-weight: 700; color: #fff; margin-top: 0.25rem; }
-        .metric-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore quantum phase estimation and small modular order-finding simulations locally in your browser.">
+  <title>Quantum Phase Estimation &amp; Shor Order Finding</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0b1020; --surface:#151e32; --line:#33445e; --text:#edf4fc; --muted:#b4c3d5; --accent:#79b7ff; --bar:#54c6b9; }
+    * { box-sizing: border-box; }
+    body { margin:0; padding:0 1.25rem; font: 15px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); }
+    main { max-width:1140px; margin:0 auto; }
+    header { padding:2rem 0 1.3rem; border-bottom:1px solid var(--line); margin-bottom:1.5rem; }
+    h1 { font-size:clamp(1.55rem,3.6vw,2.25rem); line-height:1.2; margin:0 0 .55rem; letter-spacing:-.025em; }
+    h2 { font-size:1.15rem; margin:0 0 .65rem; }
+    p { margin:.3rem 0 .85rem; }
+    .intro, .note { color:var(--muted); max-width:80ch; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.25rem; }
+    .card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:1.25rem; min-width:0; }
+    .fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; margin:1rem 0; }
+    label { display:block; font-size:.9rem; font-weight:600; color:var(--muted); }
+    input { display:block; margin-top:.35rem; width:100%; padding:.65rem; border:1px solid #607792; border-radius:7px; background:var(--bg); color:var(--text); font:inherit; }
+    input:focus-visible, button:focus-visible, a:focus-visible { outline:3px solid #89d9ff; outline-offset:2px; }
+    button { background:#256cbd; color:#fff; padding:.68rem 1.15rem; border:1px solid #65aaf7; border-radius:8px; font:inherit; font-weight:700; cursor:pointer; }
+    button:hover { background:#387ed2; }
+    .result { min-height:3.4rem; padding:.9rem 0 .65rem; color:var(--text); overflow-wrap:anywhere; }
+    .chart { border-top:1px solid var(--line); padding-top:.7rem; }
+    .bar-row { display:grid; grid-template-columns:3ch minmax(0,1fr) 6ch; align-items:center; gap:.75rem; margin:.35rem 0; font-variant-numeric:tabular-nums; font-size:.85rem; }
+    .bar-row .selected { font-weight:700; color:var(--accent); }
+    .bar-track { background:#25314a; border-radius:4px; height:13px; overflow:hidden; }
+    .bar-fill { background:var(--bar); height:100%; min-width:0; border-radius:4px; }
+    .bar-row span:last-child { text-align:right; }
+    .footnote { color:var(--muted); font-size:.85rem; margin:.85rem 0 0; }
+    .explain { margin:1.25rem 0 2rem; }
+    a { color:var(--accent); }
+    code { background:#222f46; padding:.08rem .28rem; border-radius:3px; }
+    @media (max-width:780px) { .grid {grid-template-columns:1fr;} }
+    @media (max-width:380px) { .fields { grid-template-columns:1fr; } }
+  </style>
+  <script src="./app.js" defer></script>
 </head>
 <body>
-
-    <div class="header">
-        <div class="header-title">
-            <h1>Quantum Phase Estimation Shor</h1>
-            <p>Domain: Clinical & Cryptographic AI | Standard: CAP / CLSI / NIST Standards | LabMind-Atlas Architecture</p>
+<main>
+  <header>
+    <h1>Quantum Phase Estimation &amp; Shor Order Finding</h1>
+    <p class="intro">Interactive, dependency-free simulations of phase estimation and modular order finding. Runs entirely in the browser; no server, API key, or data upload.</p>
+  </header>
+  <div class="grid">
+    <section class="card" aria-labelledby="phase-heading">
+      <h2 id="phase-heading">Phase estimation</h2>
+      <p class="note">Estimate the eigenphase of a unitary with eigenvalue exp(2πiφ). Phases are periodic modulo 1.</p>
+      <form id="phase-form">
+        <div class="fields">
+          <label for="phase">Eigenphase φ
+            <input id="phase" name="phase" type="number" value="0.25" step="any" required>
+          </label>
+          <label for="phase-ancilla">Ancilla qubits
+            <input id="phase-ancilla" name="ancilla" type="number" value="4" min="1" max="10" step="1" required>
+          </label>
         </div>
-        <div>
-            <span class="badge">Air-Gapped Active</span>
-            <span class="badge" style="background: rgba(16,185,129,0.2); color: #10b981; border-color: #10b981;">Zero-PHI Guard Active</span>
+        <button type="submit">Estimate phase</button>
+      </form>
+      <div id="phase-output" class="result" role="status" aria-live="polite"></div>
+      <div id="phase-bars" class="chart" aria-label="Twelve most probable phase measurements"></div>
+      <p class="footnote">Plot shows the 12 most probable measurement outcomes, indexed from zero. The full distribution is used in calculations.</p>
+    </section>
+    <section class="card" aria-labelledby="order-heading">
+      <h2 id="order-heading">Modular order finding</h2>
+      <p class="note">Simulate controlled modular multiplication on a work register, inverse QFT, and continued-fraction order reconstruction.</p>
+      <form id="order-form">
+        <div class="fields">
+          <label for="base">Base a
+            <input id="base" name="base" type="number" value="2" min="2" max="62" step="1" required>
+          </label>
+          <label for="modulus">Modulus N
+            <input id="modulus" name="modulus" type="number" value="15" min="3" max="63" step="1" required>
+          </label>
+          <label for="order-ancilla">Ancilla qubits
+            <input id="order-ancilla" name="ancilla" type="number" value="8" min="1" max="10" step="1" required>
+          </label>
         </div>
-    </div>
-
-    <div class="metrics-bar">
-        <div class="metric-box">
-            <div class="metric-label">System Status</div>
-            <div class="metric-val" style="color: var(--success);" id="m-status">OPTIMAL</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Tasks Processed</div>
-            <div class="metric-val" id="m-tasks">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Audit Blocks Signed</div>
-            <div class="metric-val" id="m-audit">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">PHI Interceptions</div>
-            <div class="metric-val" style="color: var(--accent);" id="m-phi">0</div>
-        </div>
-    </div>
-
-    <div class="grid">
-        <div class="card">
-            <h2>⚙️ Dispatch Distributed Component Audit</h2>
-            <div class="form-group">
-                <label>Task / Sample ID</label>
-                <input type="text" id="task_id" value="TASK-2026-LIVE-01">
-            </div>
-            <div class="form-group">
-                <label>Target Identifier</label>
-                <input type="text" id="target_id" value="SPECIMEN-ALPHA-77">
-            </div>
-            <div class="form-group">
-                <label>Primary Measurement / Value</label>
-                <input type="number" id="primary_metric" value="29.4" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Secondary Metric / Kinetic Index</label>
-                <input type="number" id="secondary_metric" value="14.8" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Status / Phenotype Descriptor</label>
-                <input type="text" id="status_descriptor" value="DISCORDANT_ANOMALY">
-            </div>
-            <div class="form-group">
-                <label><input type="checkbox" id="is_critical" checked> Trigger Emergency / Critical Flag</label>
-            </div>
-            <button class="btn" onclick="runAudit()">Execute Distributed Component Audit</button>
-        </div>
-
-        <div class="card">
-            <h2>📊 Real-Time Consensus Dossier & Audit Log</h2>
-            <div class="terminal" id="outputConsole">// Quantum Phase Estimation Shor Operations Console Ready
-// Connection established with Air-Gapped Supervisor
-// Cryptographic HMAC-SHA256 audit ledger loaded.
-// Ready for live task payload dispatch...</div>
-        </div>
-    </div>
-
-    <script>
-        async function runAudit() {
-            const consoleEl = document.getElementById('outputConsole');
-            consoleEl.innerText = "// Dispatching task across specialized workers...
-// Invoking InvariantQCWorker, SafetyEscalationWorker, ProtocolWorker...";
-
-            const payload = {
-                task_id: document.getElementById('task_id').value,
-                target_identifier: document.getElementById('target_id').value,
-                primary_metric: parseFloat(document.getElementById('primary_metric').value),
-                secondary_metric: parseFloat(document.getElementById('secondary_metric').value),
-                status_descriptor: document.getElementById('status_descriptor').value,
-                is_critical_flag: document.getElementById('is_critical').checked
-            };
-
-            try {
-                const res = await fetch('/api/audit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                consoleEl.innerText = JSON.stringify(data, null, 2);
-                document.getElementById('m-tasks').innerText = parseInt(document.getElementById('m-tasks').innerText) + 1;
-                document.getElementById('m-audit').innerText = parseInt(document.getElementById('m-audit').innerText) + 1;
-            } catch (err) {
-                consoleEl.innerText = "// Offline / Simulation Output:\n" + JSON.stringify({
-                    dossier_id: "DOSSIER-SIM-" + Math.floor(Math.random()*10000),
-                    system: "quantum-phase-estimation-shor",
-                    domain: "Clinical & Cryptographic AI",
-                    task_id: payload.task_id,
-                    overall_urgency: payload.is_critical_flag ? "CRITICAL_STAT_PANIC" : "ELEVATED_RISK",
-                    integrity_status: "DISCORDANT_ANOMALY",
-                    alerts: [
-                        { worker: "InvariantQCWorker", alert: "Primary metric exceeds upper reference bound" },
-                        { worker: "SafetyEscalationWorker", alert: "Critical emergency interlock flag active" }
-                    ],
-                    audit_hash: "HMAC_SHA256_e83f9a72b941d6c381f9"
-                }, null, 2);
-            }
-        }
-    </script>
+        <button type="submit">Estimate modular order</button>
+      </form>
+      <div id="order-output" class="result" role="status" aria-live="polite"></div>
+      <div id="order-bars" class="chart" aria-label="Twelve most probable modular order-finding phase measurements"></div>
+      <p class="footnote">Requires 2 ≤ a &lt; N ≤ 63 and gcd(a,N)=1. Some runs with insufficient precision do not recover an order.</p>
+    </section>
+  </div>
+  <section class="card explain" aria-labelledby="about-heading">
+    <h2 id="about-heading">About the simulation</h2>
+    <p>Phase estimation uses the exact finite-register measurement distribution. The modular example constructs amplitudes for the entangled state |j⟩|a<sup>j</sup> mod N⟩, traces out the work register, and evaluates the inverse Fourier transform. It then checks candidate orders using modular exponentiation. The classical order shown separately is a verification reference, not an input to the simulated quantum distribution.</p>
+    <p class="note">This is an educational state-vector simulator, not quantum hardware or a scalable factoring implementation. No personal data should be entered. Computations remain in this browser tab; nothing is saved or transmitted by the application.</p>
+    <p><a href="https://github.com/abusuraihsakhri/quantum-phase-estimation-shor">Source code and Python CLI</a></p>
+  </section>
+</main>
 </body>
 </html>

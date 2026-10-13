@@ -12,7 +12,7 @@ supervisor = SystemSupervisor(model_provider="mock")
 
 app = FastAPI(
     title="Quantum Phase Estimation Shor API",
-    description="Enterprise Distributed Component Platform (Post-Quantum Cryptography & Hardware Security)",
+    description="Enterprise Distributed Component Platform (Quantum computing demonstration)",
     version="3.0.0-ENTERPRISE",
 )
 
@@ -23,7 +23,7 @@ class ChatRequest(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "HEALTHY", "service": "quantum-phase-estimation-shor", "domain": "Post-Quantum Cryptography & Hardware Security", "standard": "NIST FIPS 203/204/205 / ISO/IEC 17825 Standards", "version": "3.0.0-ENTERPRISE"}
+    return {"status": "HEALTHY", "service": "quantum-phase-estimation-shor", "domain": "Quantum computing demonstration", "standard": "Local demonstration thresholds (non-normative)", "version": "3.0.0-ENTERPRISE"}
 
 
 @app.get("/metrics")

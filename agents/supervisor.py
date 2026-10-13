@@ -1,6 +1,6 @@
 """
 Supervisor Orchestrator & Operations Intelligence for Quantum Phase Estimation Shor.
-Domain: Post-Quantum Cryptography & Hardware Security
+Domain: Quantum computing demonstration
 """
 import uuid
 from typing import Dict, Any, List, Optional
@@ -75,5 +75,5 @@ class SystemSupervisor:
 
     def query_supervisory_chat(self, query: str) -> str:
         PHIGuard.assert_no_phi(query)
-        prompt = f"Supervisor inquiry for Quantum Phase Estimation Shor under NIST FIPS 203/204/205 / ISO/IEC 17825 Standards: {query}"
+        prompt = f"Supervisor inquiry for Quantum Phase Estimation Shor under Local demonstration thresholds (non-normative): {query}"
         return self.llm.invoke(prompt)

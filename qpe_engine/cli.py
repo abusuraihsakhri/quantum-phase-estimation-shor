@@ -11,6 +11,18 @@ from .agents import QPECoordinator
 coordinator = QPECoordinator()
 
 
+def parse_bool(value):
+    """Read CSV boolean values without treating 'false' as true."""
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().lower()
+    if text in ("true", "1", "yes", "y", "on"):
+        return True
+    if text in ("false", "0", "no", "n", "off", ""):
+        return False
+    raise ValueError(f"Invalid boolean value: {value!r}")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="quantum-phase-estimation-shor", description="Quantum Phase Estimation (QPE) Eigenvalue Extraction Agent")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -74,7 +86,7 @@ def main(argv=None):
             fieldnames = list(reader.fieldnames or [])
             rows = list(reader)
 
-        out_fields = fieldnames + ["overall_status", "total_alerts", "critical_count", "consensus_summary"]
+        out_fields = list(dict.fromkeys(fieldnames + ["overall_status", "total_alerts", "critical_count", "consensus_summary"]))
         out_rows = []
         for r in rows:
             payload = FrontierPayload(
@@ -83,7 +95,7 @@ def main(argv=None):
                 primary_metric=float(r.get("primary_metric", 15.0)),
                 secondary_metric=float(r.get("secondary_metric", 5.0)),
                 status_descriptor=r.get("status_descriptor", "NOMINAL"),
-                is_critical_flag=bool(r.get("is_critical_flag", False)),
+                is_critical_flag=parse_bool(r.get("is_critical_flag", False)),
             )
             dossier = coordinator.process(payload)
             row_dict = dict(r)
@@ -105,6 +117,9 @@ def main(argv=None):
             import uvicorn
             from .server import create_app
             app = create_app()
+            if app is None:
+                print("FastAPI is not installed. Install the api extra.")
+                return 1
             if app:
                 print(f"Starting Quantum Phase Estimation (QPE) Eigenvalue Extraction Agent on http://{args.host}:{args.port}")
                 uvicorn.run(app, host=args.host, port=args.port)

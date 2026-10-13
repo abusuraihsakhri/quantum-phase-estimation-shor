@@ -5,7 +5,42 @@ Domain: Quantum Computing
 import uuid
 from typing import Dict, Any, List, Optional
 from .models import FrontierPayload, AgentTelemetryAlert, ExecutionStatus
-from .engine import FrontierDomainEngine
+class FrontierDomainEngine:
+    """Domain-neutral thresholds for the legacy audit coordinator.
+
+    This audit layer is separate from the QPE mathematical simulator.
+    """
+
+    @staticmethod
+    def evaluate_primary_parameter(value):
+        if value > 25.0:
+            return {
+                "summary": "Primary metric exceeds configured limit",
+                "details": f"Primary metric {value} exceeds 25.0",
+                "remediation": "Review the input metric and applicable threshold",
+            }
+        return None
+
+    @staticmethod
+    def evaluate_secondary_kinetics(value, critical):
+        if critical or value > 12.0:
+            return {
+                "summary": "Secondary metric or critical flag triggered",
+                "details": f"Secondary metric {value}; critical flag {critical}",
+                "remediation": "Review critical flag and secondary metric",
+            }
+        return None
+
+    @staticmethod
+    def audit_specification_conformance(descriptor, attributes):
+        if any(token in descriptor.upper() for token in ("DISCORDANT", "ANOMALY", "FAIL", "REJECT")):
+            return {
+                "summary": "Status descriptor indicates discordance",
+                "details": f"Descriptor: {descriptor}",
+                "remediation": "Verify status against expected specification",
+            }
+        return None
+
 
 
 class QFTInverseCircuitAgent:
