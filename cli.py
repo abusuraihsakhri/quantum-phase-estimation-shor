@@ -205,8 +205,8 @@ def cmd_chat(args):
     )
     print(f"\n[QPE Engine — Analytical Response]")
     print(f"  Query: '{query}'")
-    print(f"  Response: Quantum Phase Estimation analysis complete.")
-    print(f"  All parameters evaluated under standard QPE formulations.")
+    print(f"  Response: This command records the query only; no model-based analysis is performed.")
+    print(f"  Use the estimate or order commands to run numerical simulations.")
     print(f"  Audit blocks signed: {len(_CLI_AUDIT_LOG)}")
     return 0
 
