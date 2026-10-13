@@ -29,3 +29,6 @@ quantum-phase-estimation-shor = "qpe_engine.cli:main"
 [project.urls]
 Homepage = "https://github.com/abusuraihsakhri/quantum-phase-estimation-shor"
 Repository = "https://github.com/abusuraihsakhri/quantum-phase-estimation-shor.git"
+
+[tool.setuptools.packages.find]
+include = ["agents*", "qpe_engine*"]
