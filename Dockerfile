@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml .
-RUN pip install --no-cache-dir fastapi uvicorn pydantic pytest
+RUN pip install --no-cache-dir "fastapi>=0.100,<1" "uvicorn>=0.23,<1" "pydantic>=2,<3"
 
 COPY . .
 
