@@ -14,6 +14,7 @@ Application: Order finding (core of Shor's algorithm)
 """
 import cmath
 import math
+from fractions import Fraction
 from typing import List, Tuple, Optional, Dict
 
 
@@ -201,12 +202,12 @@ def reverse_qubits(state: List[complex], n: int) -> List[complex]:
 
 def _validate_qpe_inputs(phi: float, n_ancilla: int) -> None:
     """Validate QPE parameters, raising ValueError on invalid input."""
-    if not isinstance(n_ancilla, int):
+    if type(n_ancilla) is not int:
         raise TypeError(f"n_ancilla must be an integer, got {type(n_ancilla).__name__}")
     if n_ancilla < 1:
         raise ValueError(f"n_ancilla must be >= 1, got {n_ancilla}")
-    if n_ancilla > 20:
-        raise ValueError(f"n_ancilla must be <= 20 (state vector limit), got {n_ancilla}")
+    if n_ancilla > 12:
+        raise ValueError(f"n_ancilla must be <= 12 (practical state-vector limit), got {n_ancilla}")
     if not isinstance(phi, (int, float)):
         raise TypeError(f"phase must be a number, got {type(phi).__name__}")
     if not math.isfinite(phi):
@@ -226,7 +227,8 @@ def quantum_phase_estimation(phi: float, n_ancilla: int) -> dict:
     """
     _validate_qpe_inputs(phi, n_ancilla)
     N = 2 ** n_ancilla
-    
+    phi_mod = phi % 1.0
+
     # Step 1: After Hadamard on ancilla and controlled-U^(2^k) operations,
     # the ancilla register state is:
     # |ψ_ancilla⟩ = (1/√N) Σ_{j=0}^{N-1} e^(2πiφj) |j⟩
@@ -234,7 +236,7 @@ def quantum_phase_estimation(phi: float, n_ancilla: int) -> dict:
     ancilla_state = [complex(0, 0)] * N
     norm = 1.0 / math.sqrt(N)
     for j in range(N):
-        phase = 2.0 * cmath.pi * phi * j
+        phase = 2.0 * cmath.pi * phi_mod * j
         ancilla_state[j] = norm * cmath.exp(1j * phase)
     
     # Step 2: Apply inverse QFT to ancilla register
@@ -248,9 +250,7 @@ def quantum_phase_estimation(phi: float, n_ancilla: int) -> dict:
     estimated_phase = best_index / N
     
     # Phase error (accounting for wraparound)
-    phase_error = min(abs(estimated_phase - phi),
-                      abs(estimated_phase - phi - 1),
-                      abs(estimated_phase - phi + 1))
+    phase_error = abs((estimated_phase - phi_mod + 0.5) % 1.0 - 0.5)
     
     return {
         'true_phase': phi,
@@ -335,27 +335,32 @@ def reverse_ancilla_qubits(state: List[complex], n_ancilla: int, n_total: int,
 # ─── Order Finding (Shor's Algorithm Core) ──────────────────────────────────
 
 def modular_exponentiation_matrix(a: int, N_mod: int, n_qubits: int) -> List[List[complex]]:
+    """Unitary modular multiplication U_a |y> = |a*y mod N>.
+
+    Basis states outside the modular register (y >= N) are unchanged.
+    This is the work-register unitary, NOT the full controlled exponentiation
+    circuit. Only practical for small demonstration registers.
     """
-    Create unitary matrix for |x⟩|y⟩ → |x⟩|y * a^x mod N_mod⟩.
-    Simplified: creates a diagonal phase matrix for demonstration.
-    For a real implementation, this would be a full modular arithmetic circuit.
-    """
-    dim = 2 ** n_qubits
-    # For demonstration: compute a^x mod N for each x
-    matrix = [[complex(0) for _ in range(dim)] for _ in range(dim)]
-    for x in range(dim):
-        # Compute a^x mod N_mod
-        result = pow(a, x, N_mod) if N_mod > 0 else 0
-        # Map |x⟩ → |result⟩ (simplified permutation)
-        if result < dim:
-            matrix[result][x] = complex(1, 0)
-        else:
-            matrix[x][x] = complex(1, 0)  # fallback
+    if type(a) is not int or type(N_mod) is not int or type(n_qubits) is not int:
+        raise TypeError("a, N_mod, and n_qubits must be integers")
+    if N_mod < 2 or not (1 <= a < N_mod) or math.gcd(a, N_mod) != 1:
+        raise ValueError("require N_mod >= 2 and 1 <= a < N_mod coprime to N_mod")
+    if not (1 <= n_qubits <= 8) or (1 << n_qubits) < N_mod:
+        raise ValueError("n_qubits must be 1..8 with 2**n_qubits >= N_mod")
+    dim = 1 << n_qubits
+    matrix = [[0j] * dim for _ in range(dim)]
+    for y in range(dim):
+        mapped = (a * y) % N_mod if y < N_mod else y
+        matrix[mapped][y] = 1 + 0j
     return matrix
 
 
 def find_order_classical(a: int, N: int) -> int:
     """Classically find the order r such that a^r ≡ 1 (mod N)."""
+    if type(a) is not int or type(N) is not int:
+        raise TypeError("a and N must be integers")
+    if N <= 1:
+        raise ValueError("N must be > 1")
     if math.gcd(a, N) != 1:
         return -1
     r = 1
@@ -369,121 +374,92 @@ def find_order_classical(a: int, N: int) -> int:
 
 
 def continued_fraction_phase(phi: float, max_denom: int) -> Tuple[int, int]:
-    """Use continued fractions to find p/r ≈ phi with r ≤ max_denom.
-    Returns (numerator, denominator) = (p, r).
-    """
-    best_p, best_r = 0, 1
-    best_error = abs(phi)
-    
-    # Simple continued fraction expansion
-    a0 = int(phi)
-    x = phi - a0
-    
-    convergents = [(a0, 1)]
-    if abs(x) > 1e-12:
-        a1 = int(1.0 / x)
-        x = 1.0 / x - a1
-        convergents.append((a0 * a1 + 1, a1))
-        
-        for _ in range(20):
-            if abs(x) < 1e-12:
-                break
-            an = int(1.0 / x)
-            x = 1.0 / x - an
-            
-            p_prev2, r_prev2 = convergents[-2]
-            p_prev1, r_prev1 = convergents[-1]
-            p_new = an * p_prev1 + p_prev2
-            r_new = an * r_prev1 + r_prev2
-            
-            if r_new > max_denom:
-                break
-            convergents.append((p_new, r_new))
-    
-    # Find best convergent
-    for p, r in convergents:
-        if r <= max_denom:
-            error = abs(phi - p / r)
-            if error < best_error:
-                best_error = error
-                best_p, best_r = p, r
-    
-    return best_p, best_r
+    """Return best bounded rational approximation p/r to a finite phase."""
+    if not isinstance(phi, (float, int)) or not math.isfinite(phi):
+        raise ValueError("phi must be finite")
+    if type(max_denom) is not int or max_denom < 1:
+        raise ValueError("max_denom must be a positive integer")
+    result = Fraction(float(phi)).limit_denominator(max_denom)
+    return result.numerator, result.denominator
 
 
 def shor_order_finding(a: int, N: int, n_ancilla: int = 8) -> dict:
-    """
-    Simplified Shor's order finding using QPE.
+    """Small state-vector simulation of Shor's modular order-finding QPE.
 
-    Finds r such that a^r ≡ 1 (mod N).
-    Uses QPE on the modular exponentiation unitary.
+    The ancilla register is entangled with the modular work register |1>.
+    Controlled U_a**j generates |j>|a**j mod N> before inverse QFT.
+    The modular order is NOT supplied to the QPE circuit. A classical
+    calculation is included afterwards as an independent diagnostic.
     """
-    # Validate inputs
-    if not isinstance(a, int) or not isinstance(N, int):
+    if type(a) is not int or type(N) is not int:
         raise TypeError("a and N must be integers")
-    if N <= 1:
-        raise ValueError(f"N must be > 1, got {N}")
-    if a < 1:
-        raise ValueError(f"a must be >= 1, got {a}")
-    if a >= N:
-        raise ValueError(f"a must be < N, got a={a}, N={N}")
-    _validate_qpe_inputs(0.5, n_ancilla)  # validates n_ancilla
+    if N <= 1 or N > 255:
+        raise ValueError("N must be in the demonstration range 2..255")
+    if not 1 <= a < N:
+        raise ValueError("a must satisfy 1 <= a < N")
+    _validate_qpe_inputs(0.5, n_ancilla)
+    if n_ancilla > 10:
+        raise ValueError("order-finding demonstration supports at most 10 ancilla qubits")
 
-    # Step 1: Classical GCD check
     g = math.gcd(a, N)
     if g > 1:
-        return {
-            'a': a, 'N': N,
-            'trivial_factor': g,
-            'method': 'classical_gcd',
-            'order': -1,
-        }
-    
-    # Step 2: Find order classically (for verification)
+        return {'a': a, 'N': N, 'trivial_factor': g,
+                'method': 'classical_gcd', 'order': -1}
+
+    size = 1 << n_ancilla
+    normalizer = 1.0 / math.sqrt(size)
+    work_states = {}
+    residue = 1
+    for j in range(size):
+        # Controlled modular multiplication on the work register.
+        vector = work_states.setdefault(residue, [0j] * size)
+        vector[j] = normalizer
+        residue = (residue * a) % N
+
+    probs = [0.0] * size
+    for vector in work_states.values():
+        evolved = apply_inverse_qft(vector, n_ancilla)
+        for k, amp in enumerate(evolved):
+            probs[k] += abs(amp) ** 2
+
+    # QPE produces a DISTRIBUTION over eigenphases, not a single 1/r phase.
+    # Zero and non-coprime eigenphase numerators are uninformative; try the
+    # strongest non-zero outcomes and verify candidates by modular powers.
+    best = max(range(size), key=lambda k: probs[k])
+    selected = None
+    estimated_order = -1
+    for index in sorted(range(1, size), key=lambda k: (-probs[k], k)):
+        phase = index / size
+        _, denominator = continued_fraction_phase(phase, N)
+        if denominator > 1 and pow(a, denominator, N) == 1:
+            selected = index
+            estimated_order = denominator
+            break
+
+    # Diagnostic only: true_order does not influence QPE or reconstruction.
     true_order = find_order_classical(a, N)
-    
-    # Step 3: Simulate QPE
-    # The phase we're looking for is φ = s/r for some integer s
-    # where r is the order
-    if true_order > 0:
-        # Create phase gate with phase 1/true_order
-        phi = 1.0 / true_order
-        qpe_result = quantum_phase_estimation(phi, n_ancilla)
-        
-        # Step 4: Extract order from measured phase using continued fractions
-        measured_phase = qpe_result['estimated_phase']
-        p, r_est = continued_fraction_phase(measured_phase, N)
-        
-        # Verify: a^r ≡ 1 (mod N)?
-        if r_est > 0 and pow(a, r_est, N) == 1:
-            return {
-                'a': a, 'N': N,
-                'true_order': true_order,
-                'estimated_order': r_est,
-                'measured_phase': measured_phase,
-                'qpe_result': qpe_result,
-                'method': 'qpe',
-                'success': True,
-            }
-        else:
-            return {
-                'a': a, 'N': N,
-                'true_order': true_order,
-                'estimated_order': r_est,
-                'measured_phase': measured_phase,
-                'qpe_result': qpe_result,
-                'method': 'qpe',
-                'success': False,
-                'note': 'Order estimation failed, may need more ancilla qubits',
-            }
-    else:
-        return {
-            'a': a, 'N': N,
-            'true_order': -1,
-            'method': 'qpe',
-            'success': False,
-            'note': 'Could not find order classically for verification',
-        }
+    measurement = selected if selected is not None else best
+    phase = measurement / size
+    qpe_result = {
+        'ancilla_probabilities': probs,
+        'best_measurement': measurement,
+        'best_measurement_binary': format(measurement, f'0{n_ancilla}b'),
+        'estimated_phase': phase,
+        'n_ancilla': n_ancilla,
+        'precision': 1.0 / size,
+    }
+    success = estimated_order > 0
+    result = {
+        'a': a, 'N': N, 'true_order': true_order,
+        'estimated_order': estimated_order,
+        'measured_phase': phase,
+        'qpe_result': qpe_result,
+        'method': 'modular_multiplication_qpe',
+        'success': success,
+    }
+    if not success:
+        result['note'] = 'Order not recovered from QPE measurements; try more ancilla qubits'
+    return result
 
 
 # ─── Utility ─────────────────────────────────────────────────────────────────
