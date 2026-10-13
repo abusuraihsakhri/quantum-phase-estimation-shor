@@ -55,7 +55,10 @@ def _verify_cli_audit() -> bool:
     """Verify the integrity of the CLI audit chain."""
     for i, entry in enumerate(_CLI_AUDIT_LOG):
         prev = _CLI_AUDIT_LOG[i - 1]["current_hash"] if i > 0 else "GENESIS_BLOCK_0000000000000000"
-        if entry["prev_hash"] != prev:
+        if entry.get("prev_hash") != prev:
+            return False
+        expected = _sign_entry(entry, prev)
+        if not hmac.compare_digest(str(entry.get("current_hash", "")), expected):
             return False
     return True
 
